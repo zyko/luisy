@@ -7,7 +7,10 @@ import logging
 import os
 import json
 
-from luisy.code_inspection import create_hashes
+from luisy.code_inspection import (
+    create_hashes,
+    create_hash_of_string,
+)
 from luisy.testing import get_all_dependencies
 from luisy import (
     Task,
@@ -555,7 +558,15 @@ def get_upstream_tasks(task):
     return tasks
 
 
-def compute_hashes(tasks, requirements_path=None):
+def _make_list(obj):
+    try:
+        iter(obj)
+        return list(obj)
+    except TypeError:
+        return [obj]
+
+
+def compute_hashes(tasks, requirements_path=None, include_target_hashes=True):
     """
     Computes the hashes for all tasks
 
@@ -576,16 +587,28 @@ def compute_hashes(tasks, requirements_path=None):
     filenames = list(tasks.keys())
     task_list = [tasks[f] for f in filenames]
 
-    tasks_objects = []
     tasks_classes = []
 
     for task in task_list:
         task_class = type(task)
         if task_class not in tasks_classes:
             tasks_classes.append(task_class)
-            tasks_objects.append(task)
 
     hashes = create_hashes(tasks_classes, requirements_path=requirements_path)
-    hash_dict = dict(zip(tasks_classes, hashes))
+    hashes_cls = dict(zip(tasks_classes, hashes))
 
-    return {filename: hash_dict[type(task)] for filename, task in tasks.items()}
+    # TODO Other identifier than filename?
+    hashes_obj = {
+        filename: hashes_cls[type(task)] for filename, task in tasks.items()
+    }
+
+    for filename, task in tasks.items():
+        ins_and_outs = _make_list(task.input()) + _make_list(task.output())
+
+        obj_with_hash = [t.get_hash() for t in ins_and_outs if t.get_hash() is not None]
+        if len(obj_with_hash) > 0:
+            hashes_obj[filename] = create_hash_of_string(
+                hashes_obj[filename] + "".join([h for h in obj_with_hash])
+            )
+
+    return hashes_obj

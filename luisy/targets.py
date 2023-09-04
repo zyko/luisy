@@ -16,7 +16,10 @@ from luisy.config import (
     Config,
     change_working_dir,
 )
-from luisy.helpers import get_df_from_parquet_dir
+from luisy.helpers import (
+    get_df_from_parquet_dir,
+    create_hash_of_string,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,11 @@ class LuisyTarget(luigi.LocalTarget):
     # TODO: Should this be a public method?
     def _try_to_download(self):
         raise NotImplementedError()
+
+    def get_hash(self):
+        """
+        """
+        return None
 
 
 class LocalTarget(LuisyTarget):
@@ -226,6 +234,14 @@ class DeltaTableTarget(CloudTarget):
             return True
         except AnalysisException:
             return False
+
+    def get_last_modified_date(self):
+        """
+        """
+        return self.spark.sql(f'Describe detail {self.table_uri}').collect()[0]['lastModified']
+
+    def get_hash(self):
+        return create_hash_of_string(str(self.get_last_modified_date()))
 
     def write(self, df: SparkDataFrame):
         """

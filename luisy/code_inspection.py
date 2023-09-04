@@ -5,7 +5,6 @@
 
 import ast
 import json
-import hashlib
 import inspect
 import importlib
 import logging
@@ -17,6 +16,8 @@ from distlib.database import DistributionPath
 import numpy as np
 import pandas as pd
 import requirements
+
+from luisy.helpers import create_hash_of_string
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ def create_hashes(task_list, requirements_path=None):
         version_info_to_hash = df_reqs.requirement_line.unique().tolist()
         version_info_to_hash.sort()  # order comes from a set
         to_hash = "".join(hashes + version_info_to_hash)
-        final_hash = hashlib.md5(to_hash.encode()).hexdigest()
+        final_hash = create_hash_of_string(to_hash)
         hashes_list.append(final_hash)
 
     return hashes_list
@@ -189,8 +190,7 @@ def produce_node_hash(class_node):
 
     _remove_docstrings(class_node)
     st = ast.dump(class_node, annotate_fields=False)  # no need to include unambiguous field names.
-    hash_ = hashlib.md5(st.encode())
-    return hash_.hexdigest()
+    return create_hash_of_string(st)
 
 
 def get_import_data(module_tree):

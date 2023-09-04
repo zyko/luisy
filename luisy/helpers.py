@@ -5,6 +5,7 @@
 
 import os
 import re
+import hashlib
 from functools import reduce
 from luigi.date_interval import Week
 from luigi.tools.deps import get_task_requires
@@ -359,3 +360,9 @@ def remove_parent_directories(lst_with_substring_elements):
         if not any([element in file for file in clean_lst]):
             clean_lst.append(element)
     return clean_lst
+
+
+def create_hash_of_string(string):
+    return hashlib.md5(string.encode()).hexdigest()
+
+
