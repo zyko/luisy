@@ -566,7 +566,7 @@ def _make_list(obj):
         return [obj]
 
 
-def compute_hashes(tasks, requirements_path=None, include_target_hashes=True):
+def compute_hashes(tasks, requirements_path=None):
     """
     Computes the hashes for all tasks
 
@@ -603,10 +603,10 @@ def compute_hashes(tasks, requirements_path=None, include_target_hashes=True):
     }
 
     for filename, task in tasks.items():
-        ins_and_outs = _make_list(task.input()) + _make_list(task.output())
+        inputs = _make_list(task.input())
 
-        obj_with_hash = [t.get_hash() for t in ins_and_outs if t.get_hash() is not None]
-        if len(obj_with_hash) > 0:
+        obj_with_hash = [t.get_hash() for t in inputs if t.get_hash() is not None]
+        if len(obj_with_hash) > 0 and Config().get_param('include_file_hashes'):
             hashes_obj[filename] = create_hash_of_string(
                 hashes_obj[filename] + "".join([h for h in obj_with_hash])
             )

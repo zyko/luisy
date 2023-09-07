@@ -17,10 +17,12 @@ default_params = {
     'no_ask': False,
     'requirements_path': None,
     'hash_update_mode': False,
+    'include_file_hashes': False,
 }
 env_keys = {
     'working_dir': 'WORKING_DIR',
     'requirements_path': 'LUISY_REQUIREMENTS_PATH',
+    'include_file_hashes': 'LUISY_INCLUDE_FILE_HASHES',
     'azure_storage_key': 'LUISY_AZURE_STORAGE_KEY',
     'azure_account_name': 'LUISY_AZURE_ACCOUNT_NAME',
     'azure_container_name': 'LUISY_AZURE_CONTAINER_NAME',
