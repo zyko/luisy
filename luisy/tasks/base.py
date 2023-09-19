@@ -16,7 +16,10 @@ from luisy.decorators import (
 )
 from luisy.config import Config
 from luisy.visualize import visualize_task
-from luisy.targets import CloudTarget
+from luisy.targets import (
+    CloudTarget,
+    LocalTarget
+)
 
 from luisy.helpers import RegexTaskPattern
 
@@ -247,3 +250,9 @@ class DatabricksTask(Task):
     @property
     def spark(self):
         return Config().spark
+
+    def write(self, df):
+        target = self.output()
+        if isinstance(target, LocalTarget) and not isinstance(df, pd.DataFrame):
+            df = df.toPandas()
+        super().write(df)
