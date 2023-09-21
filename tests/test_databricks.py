@@ -30,10 +30,7 @@ class LocalTask(DatabricksTask):
 
     def run(self):
         df = self.input().read()
-
-        df_pandas = df.toPandas()
-
-        self.write(df_pandas)
+        self.write(df)
 
 
 class TestSparkTask(unittest.TestCase):
@@ -46,7 +43,6 @@ class TestSparkTask(unittest.TestCase):
 
         self.hashes = {
             "/A.B.interim.DeltaTable": "2",
-            "/tests/interim/LocalTask.pkl": "3"
         }
 
     def tearDown(self):
@@ -54,6 +50,7 @@ class TestSparkTask(unittest.TestCase):
 
     @patch("luisy.hashes.compute_hashes")
     def test_local_task(self, compute_hashes):
+        self.hashes.update({"/tests/interim/LocalTask.pkl": "3"})
 
         # Detour hash_computation
         compute_hashes.return_value = self.hashes
