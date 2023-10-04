@@ -58,10 +58,8 @@ class Config(metaclass=Singleton):
     def _check_for_existing_spark(self):
         if SparkContext._active_spark_context:
             spark = SparkSession.builder.getOrCreate()
-            self.lives_in_databricks = True
             return spark
         return None
-
 
     def _init_spark(self):
 
@@ -112,6 +110,7 @@ class Config(metaclass=Singleton):
         if not hasattr(self, 'fs') and self.download:
             self._init_azure()
 
+        # todo: I think we should introduce another cli parameter for creating a spark session
         if not hasattr(self, 'spark'):
             self._init_spark()
 

@@ -2,7 +2,6 @@
 # the repository https://github.com/boschglobal/luisy
 #
 # SPDX-License-Identifier: Apache-2.0
-
 import pickle
 import json
 import luigi
@@ -38,7 +37,7 @@ class LuisyTarget(luigi.LocalTarget):
     def exists(self):
         raise NotImplementedError()
 
-    def write(self):
+    def write(self, obj):
         raise NotImplementedError()
 
     def read(self):
@@ -57,7 +56,6 @@ class LuisyTarget(luigi.LocalTarget):
 
 
 class LocalTarget(LuisyTarget):
-
     file_ending = None
 
     def __init__(self, path, **kwargs):
@@ -173,26 +171,36 @@ class CloudTarget(LuisyTarget):
         self.kwargs = kwargs
 
 
-class DeltaTableTarget(CloudTarget):
+class SparkTarget(CloudTarget):
+    """
+    this abstract class is for targets working with spark instances.
+    """
+    @property
+    def spark(self):
+        try:
+            return Config().spark
+        except AttributeError:
+            raise AttributeError(
+                "spark session was not found in config. Make sure to have all the databricks "
+                "parameters set in order to start the spark session!"
+            )
 
+
+class DeltaTableTarget(SparkTarget):
     # TODO: Can we get rid of fileending
     file_ending = 'DeltaTable'
 
     def __init__(
-        self,
-        outdir=None,
-        schema="schema",
-        catalog="catalog",
-        table_name=None
+            self,
+            outdir=None,
+            schema="schema",
+            catalog="catalog",
+            table_name=None
     ):
         self.outdir = outdir
         self.table_name = table_name
         self.schema = schema
         self.catalog = catalog
-
-    @property
-    def spark(self):
-        return Config().spark
 
     def make_dir(self, path):
         # TODO: Nothing to do here, adapt interface?
@@ -240,6 +248,75 @@ class DeltaTableTarget(CloudTarget):
 
     def read(self):
         return self.spark.table(self.table_uri)
+
+
+class AzureBlobStorageTarget(SparkTarget):
+    file_ending = ""
+
+    def __init__(
+            self,
+            outdir=None,
+            endpoint=None,
+            directory=None,
+            inferschema=False,
+            file_format="parquet",
+    ):
+        self.outdir = outdir
+        self.endpoint = endpoint
+        self.directory = directory
+        self.inferschema = inferschema
+        self.file_format = file_format
+
+    def make_dir(self, path):
+        pass
+
+    def remove(self):
+        """
+        we do not remove files from azure blob storage, but we always overwrite.
+        """
+        pass
+
+    @property
+    def blob_uri(self):
+        return os.path.join(self.endpoint, self.directory)
+
+    @property
+    def path(self):
+        # TODO: Path here is more an identifier that shows up in `.luisy.hashes`
+        return os.path.join(
+            self.outdir,
+            self.endpoint,
+            self.directory,
+        )
+
+    def exists(self):
+        """
+        Checks whether the file exists in Azure Blob Storage
+
+        """
+        try:
+            self.spark.read.format(self.file_format).load(self.blob_uri).limit(1).count()
+            return True
+        except Exception:
+            return False
+
+    def write(self, df):
+        """
+        Write Pyspark DataFrame to Azure Blob Storage
+        Args:
+            df (pyspark.DataFrame): DataFrame that is to be stored in Azure Blob Storage
+        """
+        df.write.format(self.file_format).mode("overwrite").save(self.blob_uri)
+
+    def read(self):
+        """
+        Read object from Azure Blob
+        """
+
+        return self.spark.read.format(self.file_format).load(
+            self.blob_uri,
+            inferschema=self.inferschema,
+        )
 
 
 class PickleTarget(LocalTarget):
