@@ -12,7 +12,7 @@ with open('VERSION') as f:
     version = f.read().splitlines()[0]
 
 setup(
-    name='luisy',
+    name='luisy-fork',
     version=version,
     description='Framework to build data pipelines',
     author='Robert Bosch GmbH',
